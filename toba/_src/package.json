@@ -1,0 +1,11 @@
+{
+  "name": "toba3d",
+  "private": true,
+  "description": "鳥羽 3D たんけん水族館（ファン作品）のソース",
+  "devDependencies": {
+    "esbuild": "0.24.2"
+  },
+  "dependencies": {
+    "three": "0.160.0"
+  }
+}

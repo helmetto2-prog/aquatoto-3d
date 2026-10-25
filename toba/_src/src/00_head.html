@@ -1,0 +1,244 @@
+<title>鳥羽 3D たんけん水族館</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+/* レイアウト: 全画面の3D水族館。四隅に「水槽の解説ラベル」風の紺パネルを浮かべ、主役のボール色（黄）を押し所だけに使う */
+:root{
+  --deep:#061a2b;            /* 鳥羽湾の深い紺（地） */
+  --panel:rgba(6,30,48,.82); /* 解説ラベルのパネル */
+  --line:rgba(120,200,235,.38);
+  --foam:#eaf6ff;            /* 文字 */
+  --mist:#9fc6dc;            /* 補助文字 */
+  --buoy:#ffc93c;            /* アシカの黄色いボール（押せる所） */
+  --buoy-ink:#4a2f00;
+  --hoop:#ff7a9a;            /* 輪くぐりの輪（ミス・注意） */
+  --sea:#2fd0c8;             /* 鳥羽湾のエメラルド（成功・現在地） */
+  --paper:#fff6dc;           /* 認定証 */
+  --paper-ink:#5a4410;
+  --ui:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Hiragino Sans','Meiryo',sans-serif;
+  --display:'Dela Gothic One','Hiragino Sans','Meiryo',sans-serif;
+  --top:env(safe-area-inset-top,0px); --bot:env(safe-area-inset-bottom,0px);
+  --lft:env(safe-area-inset-left,0px); --rgt:env(safe-area-inset-right,0px);
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--deep);color:var(--foam);font-family:var(--ui);
+  -webkit-user-select:none;user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent}
+canvas#gl{position:fixed;inset:0;display:block;width:100vw;height:100vh;outline:none}
+button{font-family:var(--ui);color:inherit}
+button:focus-visible{outline:3px solid var(--buoy);outline-offset:2px}
+.panel{position:fixed;z-index:20;background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:6px 12px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#zoneBadge{top:calc(10px + var(--top));left:calc(10px + var(--lft));font-weight:900;font-size:16px;letter-spacing:.06em;max-width:46vw}
+#zoneBadge small{display:block;font-weight:700;font-size:11px;letter-spacing:.04em;color:var(--mist);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stampBtn{top:calc(10px + var(--top));left:50%;transform:translateX(-50%);font-weight:900;font-size:15px;cursor:pointer;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+#stampBtn .bar{display:inline-block;width:62px;height:6px;border-radius:3px;background:rgba(255,255,255,.15);vertical-align:middle;margin-left:6px;overflow:hidden}
+#stampBtn .bar i{display:block;height:100%;width:0;background:var(--buoy);transition:width .5s}
+#btns{top:calc(10px + var(--top));right:calc(10px + var(--rgt));display:flex;gap:5px;padding:4px}
+#btns button{background:#0f3b5e;border:1px solid #2f77a8;border-radius:9px;font-size:16px;width:36px;height:34px;cursor:pointer;padding:0}
+#btns button:active{background:#1d5c8e}
+#prompt{bottom:calc(132px + var(--bot));left:50%;transform:translateX(-50%);font-weight:900;font-size:15px;border-color:var(--buoy);color:#fff3c4;animation:pp 1.2s infinite;white-space:nowrap}
+@keyframes pp{50%{transform:translateX(-50%) scale(1.05)}}
+#plaque{bottom:calc(72px + var(--bot));left:50%;transform:translateX(-50%);width:min(560px,88vw);font-size:13px;line-height:1.6;box-sizing:border-box}
+#plaque b{color:var(--sea);font-size:14px}
+#plaque .zl{display:inline-block;background:var(--sea);color:#032;font-weight:900;border-radius:6px;padding:0 6px;margin-right:6px;font-size:12px}
+#toast{top:calc(56px + var(--top));left:50%;transform:translateX(-50%);font-size:14px;font-weight:700;border-color:var(--buoy);max-width:86vw;text-align:center}
+#caption{top:calc(100px + var(--top));left:50%;transform:translateX(-50%);font-size:15px;font-weight:700;max-width:86vw;text-align:center;border-color:var(--sea);
+  background:rgba(4,40,52,.86)}
+#caption .who{color:var(--buoy);margin-right:6px}
+/* ショーの合図 */
+#cue{position:fixed;z-index:25;left:50%;bottom:calc(150px + var(--bot));transform:translateX(-50%);width:120px;height:120px;pointer-events:none}
+#cue .tgt{position:absolute;inset:30px;border-radius:50%;border:4px solid var(--buoy);background:rgba(255,201,60,.18);box-shadow:0 0 18px rgba(255,201,60,.6)}
+#cue .ring{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:4px solid #fff;opacity:.95}
+#cue .lab{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-weight:900;font-size:15px;color:var(--buoy-ink);text-shadow:none}
+#cueRes{position:fixed;z-index:26;left:50%;bottom:calc(280px + var(--bot));transform:translateX(-50%);font-family:var(--display);font-size:30px;letter-spacing:.04em;
+  pointer-events:none;text-shadow:0 3px 0 rgba(0,0,0,.35)}
+#cueRes.pf{color:var(--buoy)} #cueRes.gd{color:var(--sea)} #cueRes.ms{color:var(--hoop)}
+#showHud{top:calc(56px + var(--top));right:calc(10px + var(--rgt));font-weight:900;font-size:14px;font-variant-numeric:tabular-nums;text-align:right}
+#showHud small{display:block;color:var(--mist);font-weight:700;font-size:11px}
+/* ペンギンクイズ */
+#quiz{left:50%;top:calc(150px + var(--top));transform:translateX(-50%);width:min(420px,88vw);box-sizing:border-box;padding:12px 14px;border-color:var(--sea)}
+#quiz .q{font-weight:900;font-size:15px;line-height:1.5;margin-bottom:8px}
+#quiz .opts{display:grid;gap:6px}
+#quiz button{background:#0f3b5e;border:1px solid #2f77a8;border-radius:10px;padding:9px 10px;font-size:14px;font-weight:700;text-align:left;cursor:pointer}
+#quiz button.ok{background:#0c6b5f;border-color:var(--sea)} #quiz button.ng{background:#6b2335;border-color:var(--hoop)}
+/* フロアマップ */
+#mapPanel{left:50%;top:50%;transform:translate(-50%,-50%);z-index:60;padding:10px 12px 12px;width:min(640px,94vw);box-sizing:border-box}
+#mapPanel h3{margin:0 0 6px;font-size:15px;font-weight:900;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#mapPanel h3 span{font-size:11px;color:var(--mist);font-weight:700}
+#mapTabs{display:flex;gap:6px;margin-bottom:6px}
+#mapTabs button,#mapPanel .x{background:#0f3b5e;border:1px solid #2f77a8;border-radius:8px;font-size:13px;font-weight:900;padding:4px 12px;cursor:pointer}
+#mapTabs button[aria-pressed="true"]{background:var(--buoy);color:var(--buoy-ink);border-color:var(--buoy)}
+#mapCv{width:100%;height:auto;display:block;border-radius:8px;background:#04121f}
+/* スタンプ帳 */
+#stampCard{position:fixed;inset:0;z-index:70;background:rgba(2,12,22,.72);display:flex;align-items:center;justify-content:center}
+#stampCard .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;width:min(560px,92vw);max-height:84vh;overflow:auto;box-sizing:border-box}
+#stampCard h2{margin:0 0 4px;font-size:17px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+#stampCard .sub{font-size:12px;color:var(--mist);margin-bottom:10px}
+#stampCard h4{margin:10px 0 6px;font-size:12px;letter-spacing:.12em;color:var(--mist)}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.st{display:flex;gap:6px;align-items:center;border:1px dashed rgba(160,200,230,.35);border-radius:10px;padding:6px 8px;font-size:12px;font-weight:700;min-width:0}
+.st .ic{font-size:20px;filter:grayscale(1);opacity:.35}
+.st.on{border-style:solid;border-color:var(--buoy);background:rgba(255,201,60,.10)}
+.st.on .ic{filter:none;opacity:1}
+.st .nm{min-width:0;line-height:1.25}
+.st .nm i{display:block;font-style:normal;font-size:10px;color:var(--mist);font-weight:500}
+#stampCard .x{float:right;background:#0f3b5e;border:1px solid #2f77a8;border-radius:8px;font-size:13px;font-weight:900;padding:4px 12px;cursor:pointer}
+/* 認定証 */
+#cert{position:fixed;inset:0;z-index:80;background:rgba(2,12,22,.78);display:flex;align-items:center;justify-content:center}
+#cert .card{background:linear-gradient(160deg,#fffbea,#ffe7b0);color:var(--paper-ink);border:6px double #c79a3a;border-radius:16px;padding:22px 26px;text-align:center;width:min(440px,88vw);box-sizing:border-box}
+#cert h2{font-family:var(--display);font-weight:400;font-size:24px;margin:4px 0 10px;color:#7a5408;letter-spacing:.04em}
+#cert p{margin:0;line-height:1.8;font-size:14px;font-weight:700}
+#cert button{margin-top:14px;font-size:15px;font-weight:900;padding:8px 26px;border-radius:999px;border:none;background:#0f5c8e;color:#fff;cursor:pointer}
+/* タイトル */
+#title{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;
+  padding:0 max(16px,var(--rgt)) calc(26px + var(--bot)) max(16px,var(--lft));box-sizing:border-box;
+  background:linear-gradient(180deg,rgba(3,14,26,.10) 0%,rgba(3,14,26,.05) 34%,rgba(3,18,32,.82) 62%,rgba(3,18,32,.96) 100%)}
+#title .eyebrow{font-size:12px;font-weight:900;letter-spacing:.32em;color:var(--sea)}
+#title h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,8.6vw,64px);line-height:1.05;margin:6px 0 4px;letter-spacing:.02em;text-wrap:balance;
+  text-shadow:0 4px 0 rgba(0,0,0,.35)}
+#title h1 em{font-style:normal;color:var(--buoy)}
+#title .sub{font-size:clamp(12px,3.2vw,15px);font-weight:700;color:var(--mist);margin-bottom:12px}
+#startBtn{font-family:var(--display);font-size:clamp(18px,4.6vw,24px);padding:12px 40px;border-radius:999px;border:none;background:var(--buoy);color:var(--buoy-ink);
+  cursor:pointer;box-shadow:0 6px 0 #b8821a,0 10px 24px rgba(0,0,0,.4);letter-spacing:.06em}
+#startBtn:active{transform:translateY(3px);box-shadow:0 3px 0 #b8821a}
+#startBtn[disabled],#startBtn[aria-disabled="true"]{filter:grayscale(.6);opacity:.7;cursor:progress}
+#retryBtn{margin-top:8px;font-size:14px;font-weight:900;padding:8px 20px;border-radius:999px;border:1px solid var(--line);background:#0f3b5e;color:var(--foam);cursor:pointer}
+#title .ops{margin-top:14px;font-size:clamp(11px,2.8vw,13px);line-height:1.85;background:rgba(0,20,36,.55);border:1px solid var(--line);border-radius:12px;padding:8px 14px;max-width:560px}
+#title .ops b{color:var(--buoy)}
+#title .load{margin-top:8px;font-size:11px;color:var(--mist);font-variant-numeric:tabular-nums;min-height:1.4em}
+#title .cr{margin-top:8px;font-size:10px;color:var(--mist);opacity:.85;max-width:560px;line-height:1.6}
+/* タッチ操作 */
+#touchUI{position:fixed;inset:0;z-index:30;pointer-events:none}
+#stickBase{position:absolute;left:calc(22px + var(--lft));bottom:calc(26px + var(--bot));width:116px;height:116px;border-radius:50%;
+  background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.28);pointer-events:auto;touch-action:none}
+#stickKnob{position:absolute;left:37px;top:37px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.5)}
+.tbtn{position:absolute;width:64px;height:64px;border-radius:50%;border:2px solid rgba(255,255,255,.55);color:#fff;font-size:22px;
+  display:flex;align-items:center;justify-content:center;pointer-events:auto;font-weight:900;touch-action:none}
+#btnA{right:calc(24px + var(--rgt));bottom:calc(46px + var(--bot));background:rgba(255,201,60,.72);color:var(--buoy-ink);width:74px;height:74px}
+#btnJump{right:calc(110px + var(--rgt));bottom:calc(24px + var(--bot));background:rgba(47,120,170,.6)}
+#errbar{position:fixed;left:0;right:0;bottom:0;z-index:99;background:#b3263a;color:#fff;font-size:12px;padding:4px max(16px,var(--lft)) calc(4px + var(--bot));white-space:pre-wrap}
+@media (max-width:520px){
+  #zoneBadge{font-size:14px;max-width:52vw}
+  #stampBtn{font-size:13px;top:calc(62px + var(--top));left:calc(10px + var(--lft));transform:none} #stampBtn .bar{width:40px}
+  #btns button{width:32px;height:31px;font-size:14px}
+  #toast{top:calc(104px + var(--top));font-size:13px}
+  #caption{top:calc(156px + var(--top));font-size:14px}
+  #showHud{top:calc(62px + var(--top))}
+  #plaque{bottom:calc(150px + var(--bot));font-size:12px}
+  #prompt{bottom:calc(196px + var(--bot))}
+}
+@media (prefers-reduced-motion:reduce){ #prompt{animation:none} #stampBtn .bar i{transition:none} }
+</style>
+
+<canvas id="gl" tabindex="0" aria-label="3Dの水族館"></canvas>
+
+<div id="title">
+  <div class="eyebrow">TOBA AQUARIUM · FAN MADE 3D</div>
+  <h1>鳥羽 <em>3D</em><br>たんけん水族館</h1>
+  <div class="sub">順路はないよ。すきなところから、12のゾーンをたんけんしよう</div>
+  <button id="startBtn" type="button" aria-disabled="true">にゅうかんする</button>
+  <div class="ops" id="opsTxt">
+    <b>移動</b> W/A/S/D・矢印 ／ <b>視点</b> ドラッグ ／ <b>E</b> アクション ／ <b>Space</b> ジャンプ ／ <b>Shift</b> ダッシュ ／ <b>V</b> 視点きりかえ ／ <b>M</b> フロアマップ<br>
+    アシカショーは <b>A パフォーマンススタジアム</b>。合図のタイミングで <b>E</b>（スマホは黄色ボタン）！
+  </div>
+  <div class="load" id="loadTxt">よみこみ中…（電波が弱いと少し時間がかかるよ）</div>
+  <div class="cr">個人制作のファン作品です。実在の「鳥羽水族館」（三重県鳥羽市）に行った思い出をもとに作りました。鳥羽水族館の公式とは関係ありません。</div>
+</div>
+
+<div id="zoneBadge" class="panel" hidden>1F<small>エントランス</small></div>
+<button id="stampBtn" class="panel" type="button" hidden>🎫 0/18<span class="bar"><i></i></span></button>
+<div id="btns" class="panel" hidden>
+  <button id="mapBtn" type="button" title="フロアマップ (M)" aria-label="フロアマップ">🗺</button>
+  <button id="viewBtn" type="button" title="視点きりかえ (V)" aria-label="視点きりかえ">👁</button>
+  <button id="sndBtn" type="button" title="音" aria-label="音のオンオフ">🔊</button>
+  <button id="helpBtn" type="button" title="ヘルプ" aria-label="ヘルプ">❓</button>
+</div>
+<div id="prompt" class="panel" hidden></div>
+<div id="plaque" class="panel" hidden></div>
+<div id="toast" class="panel" hidden></div>
+<div id="caption" class="panel" hidden></div>
+<div id="showHud" class="panel" hidden></div>
+<div id="cue" hidden><div class="tgt"></div><div class="ring"></div><div class="lab">合図！</div></div>
+<div id="cueRes" hidden></div>
+<div id="quiz" class="panel" hidden><div class="q"></div><div class="opts"></div></div>
+<div id="mapPanel" class="panel" hidden>
+  <h3>フロアマップ <span>● いまいる場所 ／ ✓ スタンプずみ</span><button class="x" type="button" id="mapClose">とじる</button></h3>
+  <div id="mapTabs"><button type="button" data-f="1" aria-pressed="true">1F</button><button type="button" data-f="2" aria-pressed="false">2F</button></div>
+  <canvas id="mapCv" width="1200" height="620"></canvas>
+</div>
+<div id="stampCard" hidden><div class="card">
+  <button class="x" type="button" id="stampClose">とじる</button>
+  <h2>スタンプ帳</h2>
+  <div class="sub">ゾーンの看板に近づくとポン！ショーやイベントにも参加しよう</div>
+  <h4>12のゾーン</h4><div class="sgrid" id="sgZones"></div>
+  <h4>ショー・イベント</h4><div class="sgrid" id="sgEvents"></div>
+</div></div>
+<div id="cert" hidden><div class="card">
+  <div style="font-size:34px">🏆</div>
+  <h2 id="certTitle">たんけんマスター認定証</h2>
+  <p id="certText"></p>
+  <button type="button" id="certClose">やったー！</button>
+</div></div>
+<div id="touchUI" hidden>
+  <div id="stickBase"><div id="stickKnob"></div></div>
+  <div class="tbtn" id="btnA">🖐</div>
+  <div class="tbtn" id="btnJump">⤴</div>
+</div>
+<div id="errbar" hidden></div>
+
+<script>
+/* 起動の見守り（3Dの本体より先に動く）：
+   準備ができるまでボタンは「準備中」の見た目。押されたら待ち時間を出す。
+   部品の読みこみ失敗・古いブラウザ・WebGLなし・時間切れは画面に出して、よみこみ直しボタンを置く */
+(function () {
+  var $ = function (i) { return document.getElementById(i); };
+  var B = window.__boot = { ready: false, failed: false, t0: Date.now() };
+  /* 文字のフォントは後から読む（電波が弱くても、本体の準備を待たせない） */
+  try { var fl = document.createElement('link'); fl.rel = 'stylesheet'; fl.href = 'https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap'; document.head.appendChild(fl); } catch (e) { }
+  /* スマホの操作説明は最初から出す */
+  if (window.matchMedia && matchMedia('(pointer:coarse)').matches) $('opsTxt').innerHTML = '<b>左スティック</b> 移動 ／ <b>画面ドラッグ</b> 視点 ／ <b>🖐</b> アクション ／ <b>⤴</b> ジャンプ ／ <b>🗺</b> フロアマップ<br>アシカショーは <b>A パフォーマンススタジアム</b>。合図のタイミングで <b>黄色ボタン</b>（画面タップでもOK）！';
+  B.say = function (m) { var l = $('loadTxt'); if (l) l.textContent = m; };
+  B.retry = function () {
+    if ($('retryBtn')) return;
+    var r = document.createElement('button'); r.id = 'retryBtn'; r.type = 'button'; r.textContent = '🔄 もう一度よみこむ';
+    r.onclick = function () { location.reload(); };
+    var l = $('loadTxt'); l.parentNode.insertBefore(r, l.nextSibling);
+  };
+  B.fail = function (m) { B.failed = true; B.say('⚠ ' + m); B.retry(); };
+  $('startBtn').addEventListener('click', function () {
+    if (!B.ready && !B.failed) B.say('まだ準備中だよ…もうちょっと待ってね（' + Math.round((Date.now() - B.t0) / 1000) + '秒）');
+  });
+  window.addEventListener('error', function (e) {
+    var t = e.target;
+    if (t && t !== window && t.tagName) {          // 読みこみの失敗（スクリプトだけ見る。画像やフォントは無視）
+      if (t.tagName === 'SCRIPT' && !B.ready) B.fail('3Dの部品が読みこめなかった。電波のいい所で「もう一度よみこむ」を押してね');
+      return;
+    }
+    var b = $('errbar'); b.hidden = false; b.textContent = '⚠ エラー: ' + (e.message || e.type) + (e.lineno ? ' @' + e.lineno + ':' + (e.colno || 0) : '');
+    if (!B.ready) B.fail('準備のとちゅうで止まっちゃった（' + (e.message || 'エラー') + '）');
+  }, true);
+  try {
+    var c = document.createElement('canvas'), gl = c.getContext('webgl2') || c.getContext('webgl');
+    if (!gl) B.fail('この端末では3D表示（WebGL）が使えないみたい');
+    else { var x = gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); }
+  } catch (e) { }
+  setTimeout(function () {
+    if (!B.ready && !B.failed) { B.say('まだ準備中…電波が弱いと時間がかかるよ。止まってそうなら下のボタンでよみこみ直してね'); B.retry(); }
+  }, 45000);
+})();
+</script>
+<!-- 3Dの本体（three.js もいっしょに1本にまとめたもの。外のサーバーに頼らない） -->
+<script>
+/*__APP__*/
+</script>
+<script>
+/* タイトル画面をいったん画面に出してから、3Dの水族館を組み立てはじめる */
+(function () {
+  var go = function () { if (go.done) return; go.done = true; var f = window.__tobaApp; window.__tobaApp = null; if (f) f(); };
+  requestAnimationFrame(function () { setTimeout(go, 30); });
+  setTimeout(go, 1500);
+})();
+</script>
