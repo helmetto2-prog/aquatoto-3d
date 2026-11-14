@@ -112,7 +112,9 @@ function namedTree(kind, x, z, h, y = 0) {
   const st = box(0.06, 0.72, 0.06, M.deck); st.position.set(x + 0.6, y + 0.36, z + 0.62); scene.add(st);
 }
 {
-  for (let i = 0; i < 5; i++) { namedTree(['tree_palm', 'tree_kusunoki', 'tree_palm', 'tree_kusunoki', 'tree_palm'][i], -24 + i * 6, 29, i % 2 ? 6 : 6.4); namedTree(['tree_palm', 'tree_keyaki', 'tree_palm', 'tree_keyaki', 'tree_palm'][i], 8 + i * 6, 29, i % 2 ? 5.8 : 6.4); }
+  /* 南の壁の水槽（C・E）は外へ張り出している。真裏の木は葉の板が水槽の中へ入って見えるので、張り出しの外（z=32）まで離す */
+  const rowZ = x => (x <= -15 || x >= 13) ? 32 : 29;
+  for (let i = 0; i < 5; i++) { const xw = -24 + i * 6, xe = 8 + i * 6; namedTree(['tree_palm', 'tree_kusunoki', 'tree_palm', 'tree_kusunoki', 'tree_palm'][i], xw, rowZ(xw), i % 2 ? 6 : 6.4); namedTree(['tree_palm', 'tree_keyaki', 'tree_palm', 'tree_keyaki', 'tree_palm'][i], xe, rowZ(xe), i % 2 ? 5.8 : 6.4); }
   for (let i = 0; i < 7; i++) namedTree('bush_tsutsuji', -26 + i * 9 + rnd(-1, 1), 33.5, 1.6);
   for (let i = 0; i < 6; i++) namedTree('tree_akamatsu', -36 + i * 16, 50, 7);
   namedTree('tree_sarusuberi', 44, 32, 4.6); namedTree('tree_sarusuberi', -34, 32, 4.6);

@@ -367,7 +367,80 @@ secEnd(); zoneGroup('zE', 1, 24, 0, 48, ['E1']);
   const curve = new THREE.CatmullRomCurve3([V3n(31.5, T.floorY + 5.4, -27.8), V3n(27, T.floorY + 3.2, -27.0), V3n(23, T.floorY + 1.4, -26.2), V3n(20, T.floorY + 0.3, -25.6)]);
   const rope = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.045, 6), new THREE.MeshLambertMaterial({ color: 0x4a3a2a })); T.g.add(rope);
   const L = TK.E_lobster;
-  for (let i = 0; i < 5; i++) rockAt(L.g, rnd(L.B.x0, L.B.x1), L.floorY, rnd(L.B.z0, L.B.z1), rnd(.25, .5), M.stone);
+  /* イセエビの水槽：磯の岩組み＋海藻（アラメ・ワカメ・紅藻・アオサ）＋ウニ。手前はイセエビの通り道に空けておく */
+  {
+    const fy0 = L.floorY, c01 = v => Math.max(0, Math.min(1, v));
+    const reefTex = ctex(128, 128, (g, w, h) => {
+      g.fillStyle = '#b9b4aa'; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 420; i++) { const d = Math.random() < 0.6; g.fillStyle = d ? `rgba(40,36,30,${rnd(.08, .3)})` : `rgba(255,250,235,${rnd(.06, .22)})`; g.beginPath(); g.arc(rnd(0, w), rnd(0, h), rnd(1, 6), 0, 6.3); g.fill(); }
+      for (let i = 0; i < 26; i++) { g.strokeStyle = `rgba(30,26,22,${rnd(.25, .5)})`; g.lineWidth = rnd(.6, 1.6); g.beginPath(); let x = rnd(0, w), y = rnd(0, h); g.moveTo(x, y); for (let k = 0; k < 4; k++) { x += rnd(-16, 16); y += rnd(-16, 16); g.lineTo(x, y); } g.stroke(); }
+    }, 2, 2);
+    const reefM = new THREE.MeshLambertMaterial({ map: reefTex, vertexColors: true, flatShading: true });
+    const reefRock = (x, z, sx, sy, sz, seed) => {
+      const geo = new THREE.IcosahedronGeometry(1, 3), pos = geo.attributes.position, col = new Float32Array(pos.count * 3), v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        const n = Math.sin(v.x * 2.3 + seed) * Math.sin(v.y * 2.9 + seed * 1.7) * Math.sin(v.z * 2.1 + seed * 0.6) * 0.34
+          + Math.sin(v.x * 6.1 + v.y * 4.7 + seed * 2.3) * Math.sin(v.z * 5.3 - v.y * 3.1 + seed) * 0.13
+          + Math.sin(v.x * 13 + seed) * Math.sin(v.y * 11 + seed * 3) * Math.sin(v.z * 12) * 0.05;
+        v.multiplyScalar(1 + n); if (v.y < -0.35) v.y = -0.35 + (v.y + 0.35) * 0.2;
+        pos.setXYZ(i, v.x, v.y, v.z);
+        const sh = 0.62 + n * 1.5 + v.y * 0.2;                       // くぼみと下は暗く、出っぱりと上は明るく
+        const moss = c01((v.y - 0.3) * 0.9) * 0.45;                   // 上の面にうっすら藻の色
+        col[i * 3] = c01((0.56 * (1 - moss) + 0.36 * moss) * sh); col[i * 3 + 1] = c01((0.52 * (1 - moss) + 0.50 * moss) * sh); col[i * 3 + 2] = c01((0.47 * (1 - moss) + 0.30 * moss) * sh);
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, reefM); m.scale.set(sx, sy, sz); m.rotation.y = rnd(0, 6.28); m.position.set(x, fy0 + 0.42 * sy, z); L.g.add(m); return m;
+    };
+    for (const [x, z, sx, sy, sz] of [
+      [16.95, 25.95, .75, .95, .55], [17.85, 26.05, .6, .6, .45], [16.6, 25.15, .34, .3, .34],   // 左の岩組み
+      [19.4, 26.05, .7, .5, .45], [20.0, 26.1, .5, .82, .42],                                     // まん中の奥
+      [21.75, 25.95, .8, 1.05, .55], [20.95, 26.05, .55, .55, .45], [22.1, 25.05, .38, .34, .38], // 右の岩組み
+      [18.6, 24.72, .22, .16, .2], [20.55, 24.78, .25, .18, .22]]) reefRock(x, z, sx, sy, sz, rnd(0, 50));
+    const pebM = new THREE.MeshLambertMaterial({ color: 0x8c867a, flatShading: true }), pebG = new THREE.DodecahedronGeometry(1, 0);
+    for (let i = 0; i < 16; i++) { const s = rnd(.04, .09), p = new THREE.Mesh(pebG, pebM); p.scale.set(s, s * rnd(.5, .8), s * rnd(.8, 1.2)); p.rotation.set(rnd(0, 3), rnd(0, 3), rnd(0, 3)); p.position.set(rnd(16.3, 22.2), fy0 + s * 0.3, rnd(24.5, 26.2)); L.g.add(p); }
+    /* 海藻の絵（透過）を4種類つくる */
+    const algaTex = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.lineCap = 'round'; g.lineJoin = 'round'; draw(g, w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+    const blade = (g, x0, y0, x1, y1, wd, c1, c2) => {   // 根もとが細く、まん中が太い葉を1枚
+      const mx = (x0 + x1) / 2 + rnd(-10, 10), my = (y0 + y1) / 2, nx = -(y1 - y0), ny = (x1 - x0), nl = Math.hypot(nx, ny) || 1, ox = nx / nl * wd, oy = ny / nl * wd;
+      g.fillStyle = c1; g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(mx + ox, my + oy, x1, y1); g.quadraticCurveTo(mx - ox, my - oy, x0, y0); g.fill();
+      g.strokeStyle = c2; g.lineWidth = 1.4; g.beginPath(); g.moveTo(x0, y0); g.quadraticCurveTo(mx, my, x1, y1); g.stroke();
+    };
+    const texArame = algaTex(128, 256, (g) => {   // アラメ・カジメ：茎の先に葉が扇のように広がる
+      g.strokeStyle = '#4a3c14'; g.lineWidth = 7; g.beginPath(); g.moveTo(64, 256); g.quadraticCurveTo(58, 200, 64, 150); g.stroke();
+      for (let i = 0; i < 9; i++) { const a = -1.25 + i * 0.31 + rnd(-.08, .08), len = rnd(95, 135); blade(g, 64, 152, 64 + Math.sin(a) * len * 0.5, 152 - Math.cos(a) * len, rnd(9, 14), ['#6b5a1e', '#7d6a24', '#5a4a18'][i % 3], '#8f7c34'); }
+    });
+    const texWakame = algaTex(128, 256, (g) => {  // ワカメ：ひらひらした長い葉
+      for (let i = 0; i < 5; i++) { const x0 = 22 + i * 21 + rnd(-4, 4), top = rnd(14, 70); let x = x0, y = 256; const col = ['#55651c', '#6c7c26', '#445416', '#7a8a30', '#5d6d20'][i];
+        while (y > top) { const nx = x + rnd(-11, 11), ny = y - rnd(34, 48); blade(g, x, y, nx, ny, rnd(9, 13), col, '#93a348'); x = nx; y = ny; } }
+    });
+    const texRed = algaTex(128, 128, (g) => {     // 紅藻：こまかく枝分かれした赤い藻
+      const br = (x, y, a, len, d) => { if (d > 4 || len < 5) return; const x2 = x + Math.sin(a) * len, y2 = y - Math.cos(a) * len; g.strokeStyle = ['#7a2238', '#9c3048', '#b8475a', '#c75a68', '#d06f78'][d]; g.lineWidth = 5.5 - d; g.beginPath(); g.moveTo(x, y); g.lineTo(x2, y2); g.stroke(); br(x2, y2, a - rnd(.25, .6), len * 0.74, d + 1); br(x2, y2, a + rnd(.25, .6), len * 0.74, d + 1); };
+      for (const a of [-0.7, -0.25, 0.2, 0.65]) br(64, 128, a + rnd(-.1, .1), 34, 0);
+    });
+    const texAosa = algaTex(128, 96, (g) => {     // アオサ：低い緑のひらひら
+      for (let i = 0; i < 16; i++) { g.fillStyle = ['#5fae3c', '#7cc64e', '#4c9432', '#93d662'][i % 4]; g.beginPath(); g.ellipse(rnd(18, 110), rnd(40, 92), rnd(9, 17), rnd(13, 26), rnd(-.5, .5), 0, 6.3); g.fill(); }
+    });
+    const sway = [];
+    const alga = (tex, x, z, hgt, wd, y = fy0) => {
+      const mat = (tex.userData.mat ||= new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.4, side: THREE.DoubleSide, color: 0xd6dcdc }));
+      const geo = new THREE.PlaneGeometry(wd, hgt); geo.translate(0, hgt / 2, 0);
+      const g = new THREE.Group(); for (const ry of [0, Math.PI / 2]) { const p = new THREE.Mesh(geo, mat); p.rotation.y = ry; g.add(p); }
+      g.position.set(x, y, z); g.rotation.y = rnd(0, 3.1); L.g.add(g); sway.push({ g, ph: rnd(0, 6), amp: 0.04 + hgt * 0.035 }); return g;
+    };
+    for (const [x, z, h] of [[17.4, 26.1, 1.5], [18.5, 26.2, 1.25], [19.05, 25.75, 1.0], [20.55, 26.2, 1.45], [21.1, 25.6, 0.95], [22.25, 26.15, 1.3], [16.45, 26.2, 1.2]]) alga(texArame, x, z, h, h * 0.62);
+    for (const [x, z, h] of [[16.7, 25.55, 1.0], [18.95, 26.2, 1.3], [20.25, 25.7, 0.9], [21.9, 25.35, 1.05], [19.7, 25.5, 0.75]]) alga(texWakame, x, z, h, h * 0.55);
+    for (const [x, z, h] of [[17.3, 25.35, .34], [18.2, 25.6, .28], [19.5, 25.3, .3], [20.7, 25.4, .36], [21.3, 25.0, .26], [22.0, 24.75, .3], [16.5, 24.7, .28]]) alga(texRed, x, z, h, h * 1.1);
+    for (let i = 0; i < 9; i++) alga(texAosa, rnd(16.4, 22.2), rnd(24.6, 26.1), rnd(.14, .22), rnd(.3, .42));
+    onUpdate((dt, t) => { for (const s of sway) { s.g.rotation.z = Math.sin(t * 0.9 + s.ph) * s.amp; s.g.rotation.x = Math.cos(t * 0.7 + s.ph) * s.amp * 0.6; } }, L.cx, L.cz, L.f, 26);
+    /* ムラサキウニ */
+    const uniM = new THREE.MeshLambertMaterial({ color: 0x2c1a36 }), uniG = new THREE.SphereGeometry(0.055, 10, 8), spG = new THREE.ConeGeometry(0.006, 0.1, 4); spG.translate(0, 0.05, 0);
+    for (const [x, z] of [[17.55, 25.3], [20.35, 25.25], [21.55, 24.85]]) {
+      const u = new THREE.Group(); const b = new THREE.Mesh(uniG, uniM); b.scale.y = 0.75; u.add(b);
+      for (let k = 0; k < 16; k++) { const sp = new THREE.Mesh(spG, uniM), a = rnd(0, 6.28), e = rnd(0.05, 1.45); sp.position.set(Math.cos(a) * Math.sin(e) * 0.045, Math.cos(e) * 0.035, Math.sin(a) * Math.sin(e) * 0.045); sp.rotation.set(Math.sin(a) * e, 0, -Math.cos(a) * e); u.add(sp); }
+      u.position.set(x, fy0 + 0.045, z); L.g.add(u);
+    }
+  }
   for (let i = 0; i < 6; i++) swimIn(L, mk('makeCrustacean', 'ise'), { spd: 0.08, bottom: true, turn: 0.4 });
   const Tk = TK.E_takaashi;
   for (let i = 0; i < 2; i++) swimIn(Tk, mk('makeCrustacean', 'takaashi'), { spd: 0.06, bottom: true, turn: 0.3 });
@@ -387,8 +460,9 @@ secEnd(); zoneGroup('zShop', 1, 45, 0, 34, ['SHOP1', 'REST1']);
   const shelfM = new THREE.MeshLambertMaterial({ color: 0xf2e6d0 });
   const plush = ['makeSeaLionPlush', 'makeOtterPlush', 'makeDugongPlush'];
   for (let r = 0; r < 3; r++) {
-    const sh = box(6, 1.5, 0.9, shelfM); sh.position.set(44, 0.75, 6 + r * 4.5); scene.add(sh); addSolid(41, 47, 0, 1.6, 5.55 + r * 4.5, 6.45 + r * 4.5);
-    for (let i = 0; i < 6; i++) { const c = mk(plush[(i + r) % 3]); c.g.position.set(41.6 + i * 0.95, 1.5, 6 + r * 4.5); c.g.rotation.y = rnd(-0.5, 0.5) + (r % 2 ? Math.PI : 0); c.g.scale.setScalar(0.9); scene.add(c.g); }
+    /* 台の高さ 1.5→0.7m：目線（1.3m）より下にして、ぬいぐるみを上から見られるように */
+    const sh = box(6, 0.7, 0.9, shelfM); sh.position.set(44, 0.35, 6 + r * 4.5); scene.add(sh); addSolid(41, 47, 0, 0.8, 5.55 + r * 4.5, 6.45 + r * 4.5);
+    for (let i = 0; i < 6; i++) { const c = mk(plush[(i + r) % 3]); c.g.position.set(41.6 + i * 0.95, 0.7, 6 + r * 4.5); c.g.rotation.y = rnd(-0.5, 0.5) + (r % 2 ? Math.PI : 0); c.g.scale.setScalar(0.9); scene.add(c.g); }
   }
   const cnt = box(4, 1.0, 1.2, M.deck); cnt.position.set(52, 0.5, 4); scene.add(cnt); addSolid(50, 54, 0, 1.1, 3.4, 4.6);
   const ss = sign3D(['メインショップ', 'アシカ・ラッコ・ジュゴンのぬいぐるみ'], { w: 5.8, h: 1.4, hang: 4.2, ceil: CEIL, bg: '#7a3a6a', f2: 44 }); ss.position.set(44, 0, 2);
