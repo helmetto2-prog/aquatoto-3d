@@ -99,18 +99,53 @@ button:focus-visible{outline:3px solid var(--buoy);outline-offset:2px}
 /* タイトル */
 #title{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;
   padding:0 max(16px,var(--rgt)) calc(26px + var(--bot)) max(16px,var(--lft));box-sizing:border-box;
-  background:linear-gradient(180deg,rgba(3,14,26,.10) 0%,rgba(3,14,26,.05) 34%,rgba(3,18,32,.82) 62%,rgba(3,18,32,.96) 100%)}
-#title .eyebrow{font-size:12px;font-weight:900;letter-spacing:.32em;color:var(--sea)}
-#title h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,8.6vw,64px);line-height:1.05;margin:6px 0 4px;letter-spacing:.02em;text-wrap:balance;
-  text-shadow:0 4px 0 rgba(0,0,0,.35)}
-#title h1 em{font-style:normal;color:var(--buoy)}
-#title .sub{font-size:clamp(12px,3.2vw,15px);font-weight:700;color:var(--mist);margin-bottom:12px}
-#startBtn{font-family:var(--display);font-size:clamp(18px,4.6vw,24px);padding:12px 40px;border-radius:999px;border:none;background:var(--buoy);color:var(--buoy-ink);
+  overflow:hidden;
+  background:radial-gradient(ellipse 90% 40% at 50% -6%,rgba(170,255,236,.42) 0,rgba(47,208,200,.16) 46%,rgba(47,208,200,0) 72%),
+    linear-gradient(180deg,rgba(8,120,128,.50) 0%,rgba(5,84,110,.56) 30%,rgba(3,40,66,.86) 62%,rgba(3,18,32,.97) 100%)}
+/* タイトル画面を作り直し（2026/11/17：伊勢志摩の海のエメラルド・上からさす光のすじ・のぼる泡・泳ぐ魚の群れの影・ふちどりのロゴ・あそびかたは折りたたみ） */
+#title>*{position:relative;z-index:2}
+#title .trays{position:absolute;inset:-10% -20% 0 -20%;z-index:1;pointer-events:none;
+  background:linear-gradient(98deg,transparent 0,transparent 10%,rgba(200,255,240,.17) 14%,transparent 20%,transparent 31%,rgba(200,255,240,.11) 36%,transparent 45%,transparent 55%,rgba(200,255,240,.15) 59%,transparent 65%,transparent 74%,rgba(200,255,240,.1) 79%,transparent 87%);
+  -webkit-mask-image:linear-gradient(180deg,#000 0,rgba(0,0,0,.5) 42%,transparent 78%);mask-image:linear-gradient(180deg,#000 0,rgba(0,0,0,.5) 42%,transparent 78%);
+  transform-origin:50% 0;animation:tray 10s ease-in-out infinite}
+@keyframes tray{0%,100%{transform:skewX(-5deg);opacity:.75}50%{transform:skewX(5deg);opacity:1}}
+#title .tbub{position:absolute;inset:0;z-index:1;pointer-events:none}
+#title .tbub i{position:absolute;bottom:-30px;width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(220,255,248,.7);
+  background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.75) 0,rgba(255,255,255,.1) 38%,rgba(255,255,255,0) 60%);animation:tbb 9s linear infinite}
+#title .tbub i:nth-child(1){left:9%;animation-delay:-1s} #title .tbub i:nth-child(2){left:23%;width:6px;height:6px;animation-delay:-5s;animation-duration:12s}
+#title .tbub i:nth-child(3){left:38%;width:15px;height:15px;animation-delay:-3s;animation-duration:8s} #title .tbub i:nth-child(4){left:54%;width:7px;height:7px;animation-delay:-7s;animation-duration:13s}
+#title .tbub i:nth-child(5){left:69%;animation-delay:-2s;animation-duration:10s} #title .tbub i:nth-child(6){left:83%;width:17px;height:17px;animation-delay:-6s} #title .tbub i:nth-child(7){left:93%;width:6px;height:6px;animation-delay:-4s;animation-duration:14s}
+@keyframes tbb{0%{transform:translate(0,0)}50%{transform:translate(16px,-56vh)}100%{transform:translate(-8px,-112vh)}}
+#title .tfish{position:absolute;left:0;z-index:1;width:46px;height:18px;border-radius:50%;background:#02202e;opacity:.5;pointer-events:none;animation:tsw 24s linear infinite}
+#title .tfish::before{content:"";position:absolute;left:-11px;top:50%;margin-top:-8px;border-style:solid;border-width:8px 0 8px 13px;border-color:transparent transparent transparent #02202e}
+#title .tfish.f1{top:16%;animation-delay:-3s} #title .tfish.f2{top:20%;animation-delay:-1.6s;scale:.8} #title .tfish.f3{top:13%;animation-delay:-.9s;scale:.7}
+#title .tfish.f4{top:24%;animation-delay:-2.2s;scale:.75} #title .tfish.f5{top:38%;scale:-1.9 1.9;opacity:.3;animation-duration:40s;animation-delay:-16s;animation-direction:reverse}
+@keyframes tsw{from{translate:-160px 0}to{translate:calc(100vw + 160px) 0}}
+#title .eyebrow{font-size:clamp(10px,2.8vw,12px);font-weight:900;letter-spacing:.32em;margin-left:.32em;color:var(--sea);text-shadow:0 1px 6px rgba(0,16,30,.9);animation:tin .7s ease-out both}
+#title h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,10.4vw,72px);line-height:1.22;margin:6px 0 8px;letter-spacing:.02em;
+  animation:tin .8s .1s cubic-bezier(.2,1.4,.4,1) both}
+#title h1 .lg{position:relative;display:inline-block;white-space:nowrap;isolation:isolate}
+#title h1 .lgt{position:relative;background:linear-gradient(180deg,#ffffff 0%,#d8fff6 30%,#49e0cf 64%,#12a0b8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+#title h1 .lg::before,#title h1 .lg::after{content:attr(data-t);position:absolute;left:0;top:0}
+#title h1 .lg::before{z-index:-2;-webkit-text-fill-color:#04283e;color:#04283e;-webkit-text-stroke:.28em #04283e;filter:drop-shadow(0 .08em 0 #021420) drop-shadow(0 .16em .22em rgba(0,10,24,.6))}
+#title h1 .lg::after{z-index:-1;-webkit-text-fill-color:#fff;color:#fff;-webkit-text-stroke:.09em #fff}
+#title h1 em{font-style:normal;display:inline-block;margin-left:.3em;padding:.04em .28em;border-radius:.3em;background:linear-gradient(180deg,#ffe07a,#ffb41f);color:var(--buoy-ink);
+  -webkit-text-fill-color:var(--buoy-ink);font-size:.6em;vertical-align:.22em;box-shadow:0 .1em 0 #b8821a,0 .22em .5em rgba(0,0,0,.4);transform:rotate(-6deg);animation:tpop .5s .55s cubic-bezier(.3,1.8,.5,1) both}
+@keyframes tin{from{opacity:0;transform:translateY(-22px) scale(1.12)}to{opacity:1;transform:none}}
+@keyframes tpop{from{opacity:0;transform:rotate(-6deg) scale(0)}to{opacity:1;transform:rotate(-6deg) scale(1)}}
+@keyframes tglow{50%{box-shadow:0 6px 0 #b8821a,0 10px 36px rgba(255,201,60,.95),0 0 0 9px rgba(255,255,255,.22)}}
+#title .sub{font-size:clamp(12px,3.2vw,15px);font-weight:700;color:var(--foam);text-shadow:0 1px 6px rgba(0,16,30,.9);margin-bottom:14px}
+#startBtn{font-family:var(--display);font-size:clamp(20px,5vw,28px);padding:14px 48px;border-radius:999px;border:3px solid #fff;background:linear-gradient(180deg,#ffe07a,var(--buoy));color:var(--buoy-ink);
   cursor:pointer;box-shadow:0 6px 0 #b8821a,0 10px 24px rgba(0,0,0,.4);letter-spacing:.06em}
+#startBtn[aria-disabled="false"]{animation:tglow 1.8s ease-in-out infinite}
 #startBtn:active{transform:translateY(3px);box-shadow:0 3px 0 #b8821a}
 #startBtn[disabled],#startBtn[aria-disabled="true"]{filter:grayscale(.6);opacity:.7;cursor:progress}
 #retryBtn{margin-top:8px;font-size:14px;font-weight:900;padding:8px 20px;border-radius:999px;border:1px solid var(--line);background:#0f3b5e;color:var(--foam);cursor:pointer}
-#title .ops{margin-top:14px;font-size:clamp(11px,2.8vw,13px);line-height:1.85;background:rgba(0,20,36,.55);border:1px solid var(--line);border-radius:12px;padding:8px 14px;max-width:560px}
+#title .ops{margin-top:16px;font-size:clamp(11px,2.8vw,13px);line-height:1.85;background:rgba(0,20,36,.62);border:1px solid var(--line);border-radius:14px;padding:6px 14px;max-width:560px;box-shadow:0 4px 14px rgba(0,10,24,.35)}
+#title .ops[open]{max-height:36vh;overflow:auto}
+#title .ops summary{cursor:pointer;font-weight:900;font-size:clamp(13px,3.2vw,15px);color:var(--sea);list-style:none;padding:2px 8px}
+#title .ops summary::-webkit-details-marker{display:none}
+#title .ops[open] summary{border-bottom:1px dashed rgba(47,208,200,.4);margin-bottom:4px}
 #title .ops b{color:var(--buoy)}
 #title .load{margin-top:8px;font-size:11px;color:var(--mist);font-variant-numeric:tabular-nums;min-height:1.4em}
 #title .cr{margin-top:8px;font-size:10px;color:var(--mist);opacity:.85;max-width:560px;line-height:1.6}
@@ -134,21 +169,25 @@ button:focus-visible{outline:3px solid var(--buoy);outline-offset:2px}
   #plaque{bottom:calc(150px + var(--bot));font-size:12px}
   #prompt{bottom:calc(196px + var(--bot))}
 }
-@media (prefers-reduced-motion:reduce){ #prompt{animation:none} #stampBtn .bar i{transition:none} }
+@media (max-height:480px){ #title h1{font-size:clamp(24px,12vh,44px);margin:2px 0 4px} #title .sub{margin-bottom:6px} #startBtn{padding:8px 40px} #title .ops{margin-top:8px} }
+@media (prefers-reduced-motion:reduce){ #prompt{animation:none} #stampBtn .bar i{transition:none} #title .trays,#title .tbub i,#title .tfish,#title .eyebrow,#title h1,#title h1 em,#startBtn{animation:none} }
 </style>
 </head>
 <body>
 <canvas id="gl" tabindex="0" aria-label="3Dの水族館"></canvas>
 
 <div id="title">
+  <div class="trays"></div>
+  <div class="tfish f1"></div><div class="tfish f2"></div><div class="tfish f3"></div><div class="tfish f4"></div><div class="tfish f5"></div>
+  <div class="tbub"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
   <div class="eyebrow">TOBA AQUARIUM · FAN MADE 3D</div>
-  <h1>鳥羽 <em>3D</em><br>たんけん水族館</h1>
+  <h1><span class="lg" data-t="鳥羽"><span class="lgt">鳥羽</span></span><em>3D</em><br><span class="lg" data-t="たんけん水族館"><span class="lgt">たんけん水族館</span></span></h1>
   <div class="sub">順路はないよ。すきなところから、12のゾーンをたんけんしよう</div>
   <button id="startBtn" type="button" aria-disabled="true">にゅうかんする</button>
-  <div class="ops" id="opsTxt">
+  <details class="ops"><summary>📖 あそびかた（タップでひらく）</summary><div id="opsTxt">
     <b>移動</b> W/A/S/D・矢印 ／ <b>視点</b> ドラッグ ／ <b>E</b> アクション ／ <b>Space</b> ジャンプ ／ <b>Shift</b> ダッシュ ／ <b>V</b> 視点きりかえ ／ <b>M</b> フロアマップ<br>
     アシカショーは <b>A パフォーマンススタジアム</b>。合図のタイミングで <b>E</b>（スマホは黄色ボタン）！
-  </div>
+  </div></details>
   <div class="load" id="loadTxt">よみこみ中…（電波が弱いと少し時間がかかるよ）</div>
   <div class="cr">個人制作のファン作品です。実在の「鳥羽水族館」（三重県鳥羽市）に行った思い出をもとに作りました。鳥羽水族館の公式とは関係ありません。</div>
 </div>
